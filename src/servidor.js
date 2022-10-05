@@ -13,6 +13,7 @@ app.listen(process.env.PORT || 3001, () => {
   );
 });
 
+const ITEMS_QUANTITY = 4;
 const endPointProducts = "https://api.mercadolibre.com/sites/MLA/search?q=";
 const endPointDetail = "https://api.mercadolibre.com/items/";
 
@@ -20,8 +21,12 @@ app.get("/api/items", async (req, res, next) => {
   try {
     const query = req.query.q;
     const item = await axios
-      .get(`${endPointProducts}${query}`)
-      .catch((err) => next(err));
+      .get(`${endPointProducts}${query}&limit=${ITEMS_QUANTITY}`)
+      .catch((err) => {
+        res.status(500).json({ Code: "500", Message: "Server Error" });
+        console.log(err);
+        next(err);
+      });
 
     if (!_.isEmpty(item)) {
       const items = item.data.results.map((item) => ({
@@ -84,46 +89,59 @@ app.get("/api/items/:id", async (req, res, next) => {
     const id = req.params.id.replace(":", "");
 
     const [dataService, descriptionService] = await axios.all([
-      axios.get(`${endPointDetail}${id}`).catch((err) => next(err)),
-      axios.get(`${endPointDetail}${id}/description`).catch((err) => next(err)),
+      axios.get(`${endPointDetail}${id}`).catch((err) => {
+        res.status(404).json({ Code: "500", Message: "Server Error" });
+        console.log("Error 404 in endpoint dataService");
+        next(err);
+      }),
+      axios.get(`${endPointDetail}${id}/description`).catch((err) => {
+        console.log(
+          "Error 404 in Description previosly by enpoint dataService"
+        );
+        next(err);
+      }),
     ]);
 
-    const { data: item } = dataService;
-    const { data: resDescription } = descriptionService;
+    if (!_.isEmpty(dataService)) {
+      const { data: item } = dataService;
+      const { data: resDescription } = descriptionService;
 
-    const decimals = Number((item.price % 1).toFixed(2));
+      const decimals = Number((item.price % 1).toFixed(2));
 
-    const itemDetail = {
-      id: item.id,
-      title: item.title,
-      price: {
-        currency: item.currency_id,
-        amount: Number(item.price),
-        decimals,
-      },
-      picture: item.pictures[0].url || item.thumbnail,
-      condition: item.condition,
-      free_shipping: item.shipping.free_shipping,
-      sold_quantity: Number(item.sold_quantity),
-      description: resDescription.plain_text || null,
-    };
+      const itemDetail = {
+        id: item.id,
+        title: item.title,
+        price: {
+          currency: item.currency_id,
+          amount: Number(item.price),
+          decimals,
+        },
+        picture: item.pictures[0].url || item.thumbnail,
+        condition: item.condition,
+        free_shipping: item.shipping.free_shipping,
+        sold_quantity: Number(item.sold_quantity),
+        description: resDescription.plain_text || null,
+      };
 
-    const response = {
-      author: {
-        name: "Oscar",
-        lastname: "Duque",
-      },
-      item: itemDetail,
-    };
+      const response = {
+        author: {
+          name: "Oscar",
+          lastname: "Duque",
+        },
+        item: itemDetail,
+      };
 
-    if (!_.isEmpty(item)) {
-      res.send(response);
-    } else {
-      res.status(200).json({ Code: "202", Message: "Successful Without Data" });
+      if (!_.isEmpty(item)) {
+        res.send(response);
+      } else {
+        res
+          .status(200)
+          .json({ Code: "202", Message: "Successful Without Data" });
+      }
     }
   } catch (error) {
     console.error(error);
     next(error);
-    res.status(500).json({ ok: false, message: "Server Error" });
+    res.status(500).json({ Code: "500", Message: "Server Error" });
   }
 });
