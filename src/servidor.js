@@ -4,19 +4,18 @@ const cors = require("cors");
 
 const app = express();
 const axios = require("axios");
-// const bodyParser = require("body-parser");
 const _ = require("lodash");
 app.use(cors());
 
 app.listen(process.env.PORT || 3001, () => {
-  console.log(`El servidor está inicializado en el puerto ${process.env.PORT||3001}`);
+  console.log(
+    `El servidor está inicializado en el puerto ${process.env.PORT || 3001}`
+  );
 });
 
 const endPointProducts = "https://api.mercadolibre.com/sites/MLA/search?q=";
 const endPointDetail = "https://api.mercadolibre.com/items/";
 
-// sin la función next(), el middleware no llama al
-// siguiente middleware incluso si solicita una ruta del mismo
 app.get("/api/items", async (req, res, next) => {
   try {
     const query = req.query.q;
