@@ -4,7 +4,7 @@ const cors = require("cors");
 
 const app = express();
 const axios = require("axios");
-const _ = require("lodash");
+const { isEmpty } = require("lodash");
 app.use(cors());
 
 app.listen(process.env.PORT || 3001, () => {
@@ -24,11 +24,11 @@ app.get("/api/items", async (req, res, next) => {
       .get(`${endPointProducts}${query}&limit=${ITEMS_QUANTITY}`)
       .catch((err) => {
         res.status(500).json({ Code: "500", Message: "Server Error" });
-        console.log(err);
+        console.log("Error 404 in endpoint products");
         next(err);
       });
 
-    if (!_.isEmpty(item)) {
+    if (!isEmpty(item)) {
       const items = item.data.results.map((item) => ({
         id: item.id,
         title: item.title,
@@ -47,13 +47,13 @@ app.get("/api/items", async (req, res, next) => {
       const available_filters = item.data.available_filters;
 
       const filterNew =
-        !_.isEmpty(available_filters) &&
+        !isEmpty(available_filters) &&
         available_filters
           .find(({ id }) => id === "category")
           ?.values.sort((a, b) => b.results - a.results)
           ?.map((el) => el.name);
 
-      const filterCategory = _.isEmpty(filterNew)
+      const filterCategory = isEmpty(filterNew)
         ? filters
             .find(({ id }) => id === "category")
             ?.values.map((el) => el.path_from_root)[0]
@@ -65,11 +65,11 @@ app.get("/api/items", async (req, res, next) => {
           name: "Oscar",
           lastname: "Duque",
         },
-        categories: filterCategory,
+        categories: !isEmpty(filterCategory) && filterCategory.slice(0, 5),
         items,
       };
 
-      if (!_.isEmpty(item.data.results)) {
+      if (!isEmpty(item.data.results)) {
         res.send(response);
       } else {
         res
@@ -88,21 +88,23 @@ app.get("/api/items/:id", async (req, res, next) => {
   try {
     const id = req.params.id.replace(":", "");
 
-    const [dataService, descriptionService] = await axios.all([
-      axios.get(`${endPointDetail}${id}`).catch((err) => {
-        res.status(404).json({ Code: "500", Message: "Server Error" });
+    const dataService = await axios
+      .get(`${endPointDetail}${id}`)
+      .catch((err) => {
+        res.status(500).json({ Code: "500", Message: "Server Error" });
         console.log("Error 404 in endpoint dataService");
         next(err);
-      }),
-      axios.get(`${endPointDetail}${id}/description`).catch((err) => {
+      });
+    const descriptionService = await axios
+      .get(`${endPointDetail}${id}/description`)
+      .catch((err) => {
         console.log(
           "Error 404 in Description previosly by enpoint dataService"
         );
         next(err);
-      }),
-    ]);
+      });
 
-    if (!_.isEmpty(dataService)) {
+    if (!isEmpty(dataService)) {
       const { data: item } = dataService;
       const { data: resDescription } = descriptionService;
 
@@ -131,7 +133,7 @@ app.get("/api/items/:id", async (req, res, next) => {
         item: itemDetail,
       };
 
-      if (!_.isEmpty(item)) {
+      if (!isEmpty(item)) {
         res.send(response);
       } else {
         res
