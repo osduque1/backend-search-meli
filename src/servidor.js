@@ -1,10 +1,13 @@
 const express = require("express");
-require("dotenv").config();
 const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
+const bodyParser = require("body-parser");
 const axios = require("axios");
 const { isEmpty } = require("lodash");
+
+app.use(bodyParser.json());
 app.use(cors());
 
 app.listen(process.env.PORT || 3001, () => {
@@ -14,19 +17,18 @@ app.listen(process.env.PORT || 3001, () => {
 });
 
 const ITEMS_QUANTITY = 4;
-const endPointProducts = "https://api.mercadolibre.com/sites/MLA/search?q=";
+const endPointProducts = "https://api.mercadolibre.com/sites/MLA/search";
 const endPointDetail = "https://api.mercadolibre.com/items/";
 
 app.get("/api/items", async (req, res, next) => {
   try {
-    const query = req.query.q;
-    const item = await axios
-      .get(`${endPointProducts}${query}&limit=${ITEMS_QUANTITY}`)
-      .catch((err) => {
-        res.status(500).json({ Code: "500", Message: "Server Error" });
-        console.log("Error 404 in endpoint products");
-        next(err);
-      });
+    const query = req._parsedUrl.search;
+    const endPoint = `${endPointProducts}${query}&limit=${ITEMS_QUANTITY}`;
+    const item = await axios.get(endPoint).catch((err) => {
+      res.status(500).json({ Code: "500", Message: "Server Error" });
+      console.log("Error 404 in endpoint products");
+      next(err);
+    });
 
     if (!isEmpty(item)) {
       const items = item.data.results.map((item) => ({
