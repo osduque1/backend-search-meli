@@ -107,8 +107,8 @@ app.get("/api/items/:id", async (req, res, next) => {
       });
 
     if (!isEmpty(dataService)) {
-      const { data: item } = dataService;
-      const { data: resDescription } = descriptionService;
+      const item = dataService.data;
+      const resDescription = descriptionService?.data;
 
       const decimals = Number((item.price % 1).toFixed(2));
 
@@ -124,7 +124,7 @@ app.get("/api/items/:id", async (req, res, next) => {
         condition: item.condition,
         free_shipping: item.shipping.free_shipping,
         sold_quantity: Number(item.sold_quantity),
-        description: resDescription.plain_text || null,
+        description: resDescription?.plain_text || null,
       };
 
       const response = {
