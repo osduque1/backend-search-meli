@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const config = require('./config.js');
 
 const app = express();
 const bodyParser = require("body-parser");
@@ -10,20 +10,18 @@ const { isEmpty } = require("lodash");
 app.use(bodyParser.json());
 app.use(cors());
 
-app.listen(process.env.PORT || 3001, () => {
+app.listen(config.PORT, () => {
   console.log(
-    `El servidor está inicializado en el puerto ${process.env.PORT || 3001}`
+    `El servidor está inicializado en el puerto ${config.PORT}`
   );
 });
 
 const ITEMS_QUANTITY = 4;
-const endPointProducts = "https://api.mercadolibre.com/sites/MLA/search";
-const endPointDetail = "https://api.mercadolibre.com/items/";
 
-app.get("/api/items", async (req, res, next) => {
+app.get(config.requestProducts, async (req, res, next) => {
   try {
     const query = req._parsedUrl.search;
-    const endPoint = `${endPointProducts}${query}&limit=${ITEMS_QUANTITY}`;
+    const endPoint = `${config.apiEndpointProducts}${query}&limit=${ITEMS_QUANTITY}`;
     const item = await axios.get(endPoint).catch((err) => {
       res.status(500).json({ Code: "500", Message: "Server Error" });
       console.log("Error 404 in endpoint products");
@@ -86,19 +84,19 @@ app.get("/api/items", async (req, res, next) => {
   }
 });
 
-app.get("/api/items/:id", async (req, res, next) => {
+app.get(config.requestDetail, async (req, res, next) => {
   try {
     const id = req.params.id.replace(":", "");
 
     const dataService = await axios
-      .get(`${endPointDetail}${id}`)
+      .get(`${config.endPointDetail}${id}`)
       .catch((err) => {
         res.status(500).json({ Code: "500", Message: "Server Error" });
         console.log("Error 404 in endpoint dataService");
         next(err);
       });
     const descriptionService = await axios
-      .get(`${endPointDetail}${id}/description`)
+      .get(`${config.endPointDetail}${id}/description`)
       .catch((err) => {
         console.log(
           "Error 404 in Description previosly by enpoint dataService"
